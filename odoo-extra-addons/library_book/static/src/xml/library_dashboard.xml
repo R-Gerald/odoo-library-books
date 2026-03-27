@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="library_book.LibraryDashboard" owl="1">
+        <div class="o_library_dashboard o_form_view o_form_editable">
+            <div class="o_form_sheet_bg">
+                <div class="o_form_sheet">
+
+                    <h1>Tableau de bord de la Bibliothèque</h1>
+
+                    <t t-if="state.loading">
+                        <p>Chargement des statistiques...</p>
+                    </t>
+                    <t t-else="">
+                        <div class="o_stat_box">
+                            <div class="o_stat">
+                                <span class="o_stat_value">
+                                    <t t-esc="state.stats.total_books"/>
+                                </span>
+                                <span class="o_stat_text">Livres au total</span>
+                            </div>
+                            <div class="o_stat">
+                                <span class="o_stat_value text-success">
+                                    <t t-esc="state.stats.available_books"/>
+                                </span>
+                                <span class="o_stat_text">Disponibles</span>
+                            </div>
+                            <div class="o_stat">
+                                <span class="o_stat_value text-danger">
+                                    <t t-esc="state.stats.unavailable_books"/>
+                                </span>
+                                <span class="o_stat_text">Indisponibles</span>
+                            </div>
+                        </div>
+                    </t>
+
+                    <hr/>
+
+                    <div class="mt-4">
+                        <button class="btn btn-primary" t-on-click="increment">
+                            Clique-moi !
+                        </button>
+                        <span class="ms-2">
+                            Compteur local : <strong><t t-esc="state.counter"/></strong>
+                        </span>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

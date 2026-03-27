@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="library_book.AvailabilityWidget">
+        <div class="o_field_widget">
+            <span t-if="isAvailable"
+                  style="color: green; font-weight: bold;">
+                🟢 Disponible
+            </span>
+            <span t-else=""
+                  style="color: red; font-weight: bold;">
+                🔴 Indisponible
+            </span> 
+        </div>
+    </t>
+
+</templates>
