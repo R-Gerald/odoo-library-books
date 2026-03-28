@@ -10,18 +10,35 @@ export class LibraryDashboard extends Component {
 
         this.state = useState({
             counter: 0,
+            loading: true,
+            filter: "all", // all | available | unavailable
             stats: {
                 total_books: 0,
                 available_books: 0,
                 unavailable_books: 0,
             },
-            loading: true,
+            books: [],
         });
 
-        // onWillStart est appelé avant le premier rendu du composant
         onWillStart(async () => {
-            await this.loadStats();
+            await this.loadAll();
         });
+    }
+
+    async loadAll() {
+        await this.loadStats();
+        await this.loadBooks();
+        this.state.loading = false;
+    }
+
+    getDomainFromFilter() {
+        if (this.state.filter === "available") {
+            return [["is_available", "=", true]];
+        }
+        if (this.state.filter === "unavailable") {
+            return [["is_available", "=", false]];
+        }
+        return [];
     }
 
     increment() {
@@ -29,7 +46,6 @@ export class LibraryDashboard extends Component {
     }
 
     async loadStats() {
-        // Appel RPC vers le backend Odoo
         const total = await this.orm.searchCount("library.book", []);
         const available = await this.orm.searchCount("library.book", [
             ["is_available", "=", true],
@@ -39,12 +55,28 @@ export class LibraryDashboard extends Component {
         this.state.stats.total_books = total;
         this.state.stats.available_books = available;
         this.state.stats.unavailable_books = unavailable;
+    }
+
+    async loadBooks() {
+        const domain = this.getDomainFromFilter();
+        const records = await this.orm.searchRead(
+            "library.book",
+            domain,
+            ["name", "author", "is_available", "category_id"],
+            { limit: 20 }
+        );
+
+        // searchRead retourne un tableau d'objets {id, name, ...}
+        this.state.books = records;
+    }
+
+    async onFilterChange(ev) {
+        this.state.loading = true;
+        this.state.filter = ev.target.value; // "all" | "available" | "unavailable"
+        await this.loadBooks();
         this.state.loading = false;
     }
 }
 
-// Lier au template XML
 LibraryDashboard.template = "library_book.LibraryDashboard";
-
-// Enregistrer comme "client action"
 registry.category("actions").add("library_book.dashboard_action", LibraryDashboard);
