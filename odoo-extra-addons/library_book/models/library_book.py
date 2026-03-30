@@ -124,8 +124,10 @@ class LibraryBook(models.Model):
                     timeout=10,
                 )
                 response.raise_for_status()
+                book.sync_status = 'success'
             except requests.RequestException as e:
                 _logger.error("Erreur lors de l'envoi du livre %s au webhook : %s", book.id, e)
+                book.sync_status = 'error'
                 raise ValidationError(
                     "Erreur lors de l'appel au webhook externe. "
                     "Vérifiez l'URL ou les logs serveur pour plus de détails."
