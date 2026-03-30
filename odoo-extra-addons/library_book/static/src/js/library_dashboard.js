@@ -9,6 +9,7 @@ export class LibraryDashboard extends Component {
         this.orm = useService("orm");
 
         this.state = useState({
+            searchTerm: "",
             counter: 0,
             loading: true,
             filter: "all", // all | available | unavailable
@@ -31,14 +32,22 @@ export class LibraryDashboard extends Component {
         this.state.loading = false;
     }
 
-    getDomainFromFilter() {
+    getDomain() {
+        let domain = [];
         if (this.state.filter === "available") {
-            return [["is_available", "=", true]];
+            domain.push(["is_available", "=", true]);
         }
         if (this.state.filter === "unavailable") {
-            return [["is_available", "=", false]];
+            domain.push(["is_available", "=", false]);
         }
-        return [];
+        if(this.state.searchTerm) {
+            domain.push(["name", "ilike", this.state.searchTerm]);
+        }
+        return domain;
+    }
+    async onSearchInput(ev) {
+        this.state.searchTerm= ev.target.value;
+        await this.loadBooks();
     }
 
     increment() {
@@ -58,10 +67,10 @@ export class LibraryDashboard extends Component {
     }
 
     async loadBooks() {
-        const domain = this.getDomainFromFilter();
+        
         const records = await this.orm.searchRead(
             "library.book",
-            domain,
+            this.getDomain(),
             ["name", "author", "is_available", "category_id"],
             { limit: 20 }
         );

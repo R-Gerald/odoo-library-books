@@ -27,7 +27,15 @@
 
                 <hr class="my-4"/>
 
-                <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="input-group w-50">
+                        <span class="input-group-text"><i class="fa fa-search"/></span>
+                        <input type="text" 
+                            class="form-control" 
+                            placeholder="Rechercher un titre..."
+                            t-on-input="onSearchInput"
+                            t-att-value="state.searchTerm"/>
+                    </div>
                     <label class="fw-bold">Filtre:</label>
                     <select class="form-select w-auto" t-on-change="onFilterChange">
                         <option t-att-value="'all'" t-att-selected="state.filter === 'all'">Tous</option>

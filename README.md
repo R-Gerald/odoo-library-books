@@ -82,7 +82,7 @@ Component: `LibraryDashboard`
   - `static/src/components/library_dashboard.js`
   - `static/src/components/library_dashboard.xml`
 - Declared in `__manifest__.py` under `web.assets_backend`.
-- Registered as a client action in JS via:
+- Registered as a client action in JS:
 
   ```js
   registry.category("actions").add("library_book.dashboard_action", LibraryDashboard);

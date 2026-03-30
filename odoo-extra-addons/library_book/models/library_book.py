@@ -2,6 +2,7 @@
 import logging
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError
+import requests
 
 _logger = logging.getLogger(__name__)
 
@@ -49,6 +50,15 @@ class LibraryBook(models.Model):
     published_date = fields.Date(string='Date de publication')
     is_available = fields.Boolean(string='Disponible', default=True)
     category_id = fields.Many2one('library.book.category', string='Catégorie')
+    sync_status = fields.Selection(
+        [
+            ('none', 'Jamais envoyé'),
+            ('success', 'Synchronisé'),
+            ('error', 'Erreur de synchronisation'),
+        ],
+        string="Statut synchro",
+        default='none'
+    )
 
     def action_mark_unavailable(self):
         for record in self:
@@ -83,6 +93,44 @@ class LibraryBook(models.Model):
         """Supprime tous les livres indisponibles."""
         unavailable_books = self.env['library.book'].search([('is_available', '=', False)])
         unavailable_books.unlink()
+        
+    def action_send_to_webhook(self):
+        """Envoyer les données du livre vers un webhook externe (ex: Power Automate)."""
+        # On récupère l'URL configurée
+        params = self.env['ir.config_parameter'].sudo()
+        webhook_url = params.get_param('library_book.library_webhook_url')
+
+        if not webhook_url:
+            raise ValidationError(
+                "Aucune URL de webhook configurée.\n"
+                "Veuillez aller dans Paramètres → Paramètres généraux → Library Book "
+                "et renseigner l'URL du webhook Power Automate."
+            )
+
+        for book in self:
+            payload = {
+                "id": book.id,
+                "title": book.name,
+                "author": book.author,
+                "published_date": str(book.published_date) if book.published_date else None,
+                "is_available": book.is_available,
+                "category": book.category_id.name if book.category_id else None,
+            }
+
+            try:
+                response = requests.post(
+                    webhook_url,
+                    json=payload,
+                    timeout=10,
+                )
+                response.raise_for_status()
+            except requests.RequestException as e:
+                _logger.error("Erreur lors de l'envoi du livre %s au webhook : %s", book.id, e)
+                raise ValidationError(
+                    "Erreur lors de l'appel au webhook externe. "
+                    "Vérifiez l'URL ou les logs serveur pour plus de détails."
+                )
+            book.sync_status = 'success'
 
            
 class CrmLead(models.Model):
@@ -114,3 +162,26 @@ class ResPartner(models.Model):
             if unavailable_books:
                 book_names = ', '.join(unavailable_books.mapped('name'))
                 raise ValidationError(f"Le partenaire {partner.name} ne peut pas emprunter les livres suivants car ils sont indisponibles: {book_names}")
+
+
+class ResConfigSettings(models.TransientModel):
+    _inherit = 'res.config.settings'
+
+    library_webhook_url = fields.Char(
+        string="URL Webhook Power Automate",
+        help="URL du flux Power Automate (ou autre webhook) pour recevoir les données des livres."
+    )
+
+    def set_values(self):
+        super().set_values()
+        params = self.env['ir.config_parameter'].sudo()
+        params.set_param('library_book.library_webhook_url', self.library_webhook_url or '')
+
+    @api.model
+    def get_values(self):
+        res = super().get_values()
+        params = self.env['ir.config_parameter'].sudo()
+        res.update(
+            library_webhook_url=params.get_param('library_book.library_webhook_url', default='')
+        )
+        return res
